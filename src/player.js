@@ -1,7 +1,11 @@
 var Player = function(){
-    this.lives = 5;
+    this.lives = 100000;
     this.misses = [];
+    this.clicks = 0;
     this.missTotal = 0;
+    this.accuracy = 1;
+    this.currentScore = 0;
+    this.highScore = 0;
 }
 
 Player.prototype.miss = function(){
@@ -12,7 +16,6 @@ Player.prototype.miss = function(){
         r: 0,
         id: this.missTotal
     }
-    this.missTotal++;
 
     this.misses.push(click);
 
@@ -25,6 +28,12 @@ Player.prototype.miss = function(){
            .attr('cy', function(d) {return d.y;} )
            .attr('r',  function(d) {return d.r;} )
 
+    // Decrement the player score by 3 and increase number of misses
+    this.clicks++;
+    this.missTotal++;
+    this.currentScore -= 3;
+    this.updateScores();
+    // Log info about the click
 }
 
 Player.prototype.clickAnimation = function() {
@@ -49,4 +58,18 @@ Player.prototype.removeClick = function(){
   var misses = d3.select('#arena').selectAll('circle.miss')
                         .data(this.misses,function(d) {return d.id;})
                         .exit().remove();
+}
+
+Player.prototype.updateScores = function(){
+    if(this.clicks > 0)
+        this.accuracy = (this.clicks-this.missTotal) / this.clicks;
+
+    d3.select('.current span')
+              .text(this.currentScore);
+
+    d3.select('.misses span')
+              .text(this.missTotal);
+
+    d3.select('.accuracy span')
+            .text( Math.round(this.accuracy * 100) + '%');
 }
