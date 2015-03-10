@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <link rel='stylesheet' type='css' href='styles.css'> 
+    <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+    <script src="src/PointerPrecisionGame.js" charset="utf-8"></script>
+    <script src="src/arena.js" charset="utf-8"></script>
+    <script src="src/enemy.js" charset="utf-8"></script>
+    <script src="src/playerClick.js" charset="utf-8"></script>
+    <script src="src/utils.js" charset="utf-8"></script>
+  </head>
+  <body>
+    <div class="container">
+      <div style="width:481px;height:481px">
+        <svg id='arena' width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <pattern id="smallGrid" width="8" height="8" patternUnits="userSpaceOnUse">
+              <path d="M 8 0 L 0 0 0 8" fill="none" stroke="gray" stroke-width="0.5"/>
+            </pattern>
+            <pattern id="grid" width="80" height="80" patternUnits="userSpaceOnUse">
+              <rect width="80" height="80" fill="url(#smallGrid)"/>
+              <path d="M 80 0 L 0 0 0 80" fill="none" stroke="gray" stroke-width="1"/>
+            </pattern>
+          </defs>
+          <rect id='canvas' width="100%" height="100%" fill="url(#grid)"/>
+        </svg>
+      </div>
+    </div>
+    <script>
+    var game = new PointerPrecisionGame(481, 481);
+    game.play();
+    </script>
+    <div class="scoreboard">
+    </div>
+  </body>
+</html>
