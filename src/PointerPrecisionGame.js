@@ -13,11 +13,6 @@ PointerPrecisionGame.prototype.play = function(){
 
 
 PointerPrecisionGame.prototype.end = function(){
-    // Stop all intervals
+    // End the game
     this.arena.endGame();
-    // Remove all enemies and miss animations
-    this.arena.removeEnemies();
-    this.arena.removeMissAnimations();
-    // Display loss and stats
-
 }
