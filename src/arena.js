@@ -53,7 +53,7 @@ Arena.prototype.endGame = function(){
   this.intervals.forEach(function(interval){
     clearInterval(interval);
   });
-
+  this.player.processStats(this.width, this.height);
   // Remove event handler for canvas click
   d3.select('#canvas')
     .on('click', null);
@@ -140,12 +140,12 @@ Arena.prototype.enemyGrow = function() {
 Arena.prototype.enemyRemoveDead = function(){
   for(var i = this.enemies.length-1; i >=0 ; i--){
     if(this.enemies[i].state === 'dead'){
-      if(this.player.lives <= 0)
-        document.dispatchEvent(endEvent);
-      else{
         this.enemies.splice(i,1);
         this.player.hurtPlayer();
-      }
+        this.player.addToHistoryMiss(this.enemies[i].x, this.enemies[i].y);
+        
+        if(this.player.lives <= 0)
+          document.dispatchEvent(endEvent);
     }
   }
 
@@ -168,7 +168,7 @@ Arena.prototype.enemyDestroy = function(enemy) {
   enemies.exit().remove();
 
   // Update the player
-  this.player.hit();
+  this.player.hit(enemy);
   console.log('Enemy ' + enemy.id + ' Destroyed');
 }
 //----- Arena Enemy Methods End -----
@@ -194,8 +194,15 @@ Arena.prototype.intervalEnemySpawn = function(){
   setDeceleratingTimeout(this.enemySpawn.bind(this), rate/numberToPlace, numberToPlace);
 
   var interval = setInterval(function(){
-    numberToPlace += 2;
+    // Capping the max speed
+    if(numberToPlace <= 30)
+      numberToPlace += 2;
+
     this.level++;
+    // Replenish 5 lives on every other level
+    if( (this.level % 2) === 0 ){
+      this.player.heal();
+    }
     console.log('Level: ' + this.level);
     console.log('Spawning ' + numberToPlace/(rate/1000) + ' every second')
     setDeceleratingTimeout(this.enemySpawn.bind(this), rate/numberToPlace, numberToPlace);
