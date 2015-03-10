@@ -3,16 +3,18 @@ var Arena = function(width, height){
     this.height = height;
     this.svg = null;
     this.totalEnemiesCreated = 0;
+    this.player = new Player();
     this.enemies = [];
-    this.misses = [];
-    this.spawnRateMilisec = 1000000;
+    this.spawnRateMilisec = 20000000;
 }
+
 //----- Arena Methods -----
 Arena.prototype.createArena = function(){
     // Initialize svg arena
     this.svg = d3.select('#arena');
+
     d3.select('#canvas')
-      .on('click', this.playerMiss.bind(this))
+      .on('click', this.player.miss.bind(this.player));
 
     // Periodically, add enemies to the arena
     var interval = this.intervalEnemySpawn();
@@ -24,35 +26,13 @@ Arena.prototype.createArena = function(){
 
     // Cause all enemies to grow/shrink
     this.intervalEnemyGrow();
-}
 
-Arena.prototype.playerMiss = function(){
-  var coordinates = d3.mouse(d3.select("#canvas").node());
-
-  var click = new PlayerClick(coordinates[0], coordinates[1]);
-  this.misses.push(click);
-
-  var miss = this.svg.selectAll('circle.miss')
-                        .data(this.misses);
-
-  miss.enter().append('svg:circle')
-         .attr('class', 'miss')
-         .attr('cx', function(d) {return d.x;} )
-         .attr('cy', function(d) {return d.y;} )
-         .attr('r',  function(d) {return d.r;})
-}
-
-Arena.prototype.missGrow = function() {
-  this.misses.forEach(function(miss){
-    miss.grow();
-  });
-
-  var misses = this.svg.selectAll('circle.miss')
-                        .data(this.misses)
-
-  // Update enemy radius and state
-  enemies.attr('r',  function(d) {return d.r;})
-
+    setInterval(function(){
+      if(this.player.misses.length > 0){
+        this.player.clickAnimation();
+        this.player.removeClick();
+      }
+    }.bind(this),50);
 }
 
 //----- Arena Methods End -----
@@ -78,7 +58,7 @@ Arena.prototype.enemySpawn = function() {
 }
 
 Arena.prototype.enemyIncreaseSpawnRate = function() {
-  this.spawnRateMilisec = this.spawnRateMilisec * 0.9;
+  this.spawnRateMilisec = this.spawnRateMilisec * 0.8;
   console.log('going faster: ' + this.spawnRateMilisec);
 }
 

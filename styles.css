@@ -5,6 +5,12 @@
 }
 
 .enemy{
-    fill: gray;
+    fill: green;
     stroke: black;
+}
+
+.miss{
+    fill: none;
+    stroke: yellow;
+    stroke-width: 5;
 }
