@@ -27,6 +27,24 @@ Enemy.prototype.grow = function(){
         this.r -= this.growRate;
 }
 
+Enemy.prototype.deathAnimation = function(arr){
+    var click = {
+        x: this.x,
+        y: this.y,
+        r: 10,
+        id: this.id
+    }
+    arr.push(click);
+
+    var death = d3.select('#arena').selectAll('circle.death')
+                                    .data(arr, function(d) {return d.id});
+
+    death.enter().append('svg:circle')
+           .attr('class', 'death')
+           .attr('cx', function(d) {return d.x;} )
+           .attr('cy', function(d) {return d.y;} )
+           .attr('r',  function(d) {return d.r;} )
+}
 // Remove enemy from arena
 
 // 

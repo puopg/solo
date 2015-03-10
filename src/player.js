@@ -1,11 +1,25 @@
 var Player = function(){
-    this.lives = 10;
+    // Number of lives to give the player
+    this.lives = PLAYER_LIVES;
+
+    // List of misses used for animation sake
     this.misses = [];
+    this.enemyDeaths = [];
+
+    // History of all hits and misses, to be used in data aggregation
     this.historyHits = [];
     this.historyMiss = [];
+
+    // Total number of clicks made
     this.clicks = 0;
+
+    // Total number of misses
     this.missTotal = 0;
-    this.accuracy = 1;
+
+    // Initialize player accuracy
+    this.accuracy = PLAYER_INIT_ACCURACY;
+
+    // Player Score
     this.currentScore = 0;
     this.highScore = 0;
 }
@@ -20,15 +34,15 @@ Player.prototype.hit = function(enemy){
 }
 
 Player.prototype.miss = function(){
+    // Get the coordinates of the miss
     var coordinates = d3.mouse(d3.select("#canvas").node());
-    console.log('x: ' + coordinates[0] + 'y: ' + coordinates[1]);
     var click = {
         x: coordinates[0],
         y: coordinates[1],
         r: 0,
         id: this.missTotal
     }
-
+    // Add new miss to list so d3 can render it. Also add to history
     this.misses.push(click);
     this.addToHistoryMiss(click.x, click.y);
 
@@ -45,22 +59,22 @@ Player.prototype.miss = function(){
     this.clicks++;
     this.missTotal++;
     this.currentScore -= 3;
+
+    // Update Scores
     this.updateScores();
 
-    // If you really suck...
+    // If you really suck... (you lose)
     if(this.currentScore <= -100){
       document.dispatchEvent(endEvent);
     }
-
-    // Log info about the click
 }
 Player.prototype.heal = function(){
-  console.log('Player heals for 3!');
+  console.log('Player heals for ' + PLAYER_HEAL_AMOUNT + '!');
 
-  if(this.lives+3 >= 10)
+  if(this.lives + PLAYER_HEAL_AMOUNT >= 10)
     this.lives = 10;
   else
-    this.lives += 3;
+    this.lives += PLAYER_HEAL_AMOUNT;
 }
 
 Player.prototype.hurtPlayer = function(){
@@ -70,23 +84,43 @@ Player.prototype.hurtPlayer = function(){
 }
 //----- Click actions End -----
 
-//----- Click Animations -----
-Player.prototype.clickAnimation = function() {
+//----- Animations -----
+/// Function: clickAnimation()
+/// This function will modify all the circle.miss elements and increase the radius
+/// by the amount specified in RING_SPEED. 
+Player.prototype.missAnimation = function() {
     this.misses.forEach(function(miss){
-      miss.r += 4;
+      miss.r += RING_SPEED;
     });
 
     var misses = d3.select('#arena').selectAll('circle.miss')
-                          .data(this.misses)
+                                    .data(this.misses)
 
-    // Update enemy radius and state
+    // Update
     misses.attr('r',  function(d) {return d.r;})
 }
 
+/// Function: deathAnimation()
+/// This function will modify all the circle.death elements and increase the radius
+/// by the amount specified in RING_SPEED. 
+Player.prototype.deathAnimation = function() {
+    this.enemyDeaths.forEach(function(death){
+      death.r += RING_SPEED;
+    });
 
-Player.prototype.removeClick = function(){
+    var deaths = d3.select('#arena').selectAll('circle.death')
+                          .data(this.enemyDeaths, function(d){return d.id;})
+
+    // Update
+    deaths.attr('r',  function(d) {return d.r;})
+}
+
+/// Function: removeMiss()
+/// This function will remove all miss animations that have reached a maximum size. 
+/// d3 will see this change and render accordingly. 
+Player.prototype.removeMiss = function(){
   for(var i = this.misses.length-1; i >=0 ; i--){
-    if(this.misses[i].r > 75)
+    if(this.misses[i].r > RING_SIZE)
       this.misses.splice(i,1);
   }
 
@@ -94,9 +128,24 @@ Player.prototype.removeClick = function(){
                         .data(this.misses,function(d) {return d.id;})
                         .exit().remove();
 }
-//----- Click Animations End-----
 
+/// Function: removeDeaths()
+/// This function will remove all enemy death animations that have reached a maximum size. 
+/// d3 will see this change and render accordingly. 
+Player.prototype.removeDeaths = function(){
+  for(var i = this.enemyDeaths.length-1; i >=0 ; i--){
+    if(this.enemyDeaths[i].r > RING_SIZE)
+      this.enemyDeaths.splice(i,1);
+  }
 
+  var enemyDeaths = d3.select('#arena').selectAll('circle.death')
+                        .data(this.enemyDeaths,function(d) {return d.id;})
+                        .exit().remove();
+}
+//----- Animations End-----
+
+/// Function: updateScores()
+/// This function will update the DOM with current scores
 Player.prototype.updateScores = function(){
     if(this.clicks > 0)
         this.accuracy = (this.clicks-this.missTotal) / this.clicks;
@@ -113,6 +162,7 @@ Player.prototype.updateScores = function(){
     d3.select('.accuracy span')
             .text( Math.round(this.accuracy * 100) + '%');
 }
+
 Player.prototype.addToHistoryHits = function(clickX, clickY){
   var click = {
       x: clickX,
@@ -120,6 +170,7 @@ Player.prototype.addToHistoryHits = function(clickX, clickY){
   }
   this.historyHits.push(click);
 }
+
 Player.prototype.addToHistoryMiss = function(clickX, clickY){
   var click = {
       x: clickX,
@@ -128,6 +179,9 @@ Player.prototype.addToHistoryMiss = function(clickX, clickY){
   this.historyMiss.push(click);
 }
 
+/// Function: processStats(arenaWidth,arenaHeight)
+/// arenaWidth: The maximum width of the arena
+/// arenaHeight: The maximum height of the arena
 Player.prototype.processStats = function(arenaWidth, arenaHeight){
   var hq1 = hq2 = hq3 = hq4 = 0;
   var mq1 = mq2 = mq3 = mq4 = 0;
@@ -135,14 +189,14 @@ Player.prototype.processStats = function(arenaWidth, arenaHeight){
   // *---------------------------------------------*
   // |(0,0)                          (arenaWidth,0)|
   // |                                             |
-  // |      II                        I            |
+  // |        II                      I            |
   // |                                             |
   // |                                             |
   // |                                             |
   // |                                             |
   // |                                             |
   // |                                             |
-  // |      III                       IV           |
+  // |        III                     IV           |
   // |                                             |
   // |                                             |
   // |(0,arenaHeight)      (arenaWidth,arenaHeight)|
@@ -203,6 +257,7 @@ Player.prototype.processStats = function(arenaWidth, arenaHeight){
 
   d3.select('.q4 span')
             .text(Math.round(q4Accuracy * 100) + '%   ' + hq4 + ' / ' + (hq4+mq4));
+  
   // Report Max level reached
 
   // 

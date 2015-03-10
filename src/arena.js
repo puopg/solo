@@ -61,6 +61,7 @@ Arena.prototype.endGame = function(){
   // Remove all animations currently on screen. 
   this.removeEnemies();
   this.removeMissAnimations();
+  this.removeDeathAnimations();
 }
 //----- Arena Methods End -----
 
@@ -76,6 +77,17 @@ Arena.prototype.removeMissAnimations = function(){
   
   // d3 will remove all exiting elements now
   misses.exit().remove();
+}
+
+Arena.prototype.removeDeathAnimations = function(){
+  // Set the miss array to empty, d3 will handle the cleanup
+  this.player.enemyDeaths = [];
+
+  var deaths = this.svg.selectAll('circle.death')
+                        .data(this.player.enemyDeaths, function(d) {return d.id;});
+  
+  // d3 will remove all exiting elements now
+  deaths.exit().remove();
 }
 //----- Arena Player Methods End -----
 
@@ -140,10 +152,11 @@ Arena.prototype.enemyGrow = function() {
 Arena.prototype.enemyRemoveDead = function(){
   for(var i = this.enemies.length-1; i >=0 ; i--){
     if(this.enemies[i].state === 'dead'){
-        this.enemies.splice(i,1);
         this.player.hurtPlayer();
         this.player.addToHistoryMiss(this.enemies[i].x, this.enemies[i].y);
-        
+        this.enemies[i].deathAnimation(this.player.enemyDeaths);
+        this.enemies.splice(i,1);
+
         if(this.player.lives <= 0)
           document.dispatchEvent(endEvent);
     }
@@ -187,35 +200,44 @@ Arena.prototype.intervalEnemyGrow = function(){
 }
 
 Arena.prototype.intervalEnemySpawn = function(){
-  var rate = 10000;
-  var numberToPlace = 10;
+  var rateSeconds = TIME_PER_LEVEL_SECONDS;
+  var numberToPlace = DEFAULT_ENEMIES;
+
   console.log('Level: ' + this.level);
-  console.log('Spawning ' + numberToPlace/(rate/1000) + ' every second')
-  setDeceleratingTimeout(this.enemySpawn.bind(this), rate/numberToPlace, numberToPlace);
+  console.log('Spawning ' + numberToPlace/rateSeconds + ' every second')
+  setDeceleratingTimeout(this.enemySpawn.bind(this), rateSeconds/numberToPlace, numberToPlace);
 
   var interval = setInterval(function(){
     // Capping the max speed
-    if(numberToPlace <= 30)
-      numberToPlace += 2;
+    if(numberToPlace <= MAX_ENEMIES)
+      numberToPlace += 1;
 
     this.level++;
-    // Replenish 5 lives on every other level
-    if( (this.level % 2) === 0 ){
+
+    // Replenish 3 lives on every 3rd level
+    if( (this.level % 3) === 0 ){
       this.player.heal();
     }
+
     console.log('Level: ' + this.level);
-    console.log('Spawning ' + numberToPlace/(rate/1000) + ' every second')
-    setDeceleratingTimeout(this.enemySpawn.bind(this), rate/numberToPlace, numberToPlace);
-  }.bind(this),rate);
+    console.log('Spawning ' + numberToPlace/rateSeconds + ' every second')
+
+    setDeceleratingTimeout(this.enemySpawn.bind(this), rateSeconds/numberToPlace, numberToPlace);
+  
+  }.bind(this),rateSeconds*1000);
 
   this.intervals.push(interval);
-}
+}  
 
 Arena.prototype.intervalPlayer = function(){
   var interval = setInterval(function(){
     if(this.player.misses.length > 0){
-      this.player.clickAnimation();
-      this.player.removeClick();
+      this.player.missAnimation();
+      this.player.removeMiss();
+    }
+    if(this.player.enemyDeaths.length > 0){
+      this.player.deathAnimation();
+      this.player.removeDeaths();
     }
   }.bind(this),50);
 
