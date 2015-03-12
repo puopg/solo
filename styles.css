@@ -4,8 +4,12 @@
     width: 50%;
 }
 
+.grid{
+    background-color: gray;
+}
+
 .enemy{
-    fill: green;
+    fill: #00E600;
     stroke: black;
 }
 
