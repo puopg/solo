@@ -21,7 +21,6 @@ var Player = function(){
 
     // Player Score
     this.currentScore = 0;
-    this.highScore = 0;
 }
 
 //----- Click actions -----
@@ -240,10 +239,10 @@ Player.prototype.processStats = function(arenaWidth, arenaHeight){
     }
   });
 
-  var q1Accuracy = 1 - mq1/(hq1+mq1);
-  var q2Accuracy = 1 - mq2/(hq2+mq2);
-  var q3Accuracy = 1 - mq3/(hq3+mq3);
-  var q4Accuracy = 1 - mq4/(hq4+mq4);
+  var q1Accuracy = 1 - mq1/(hq1+mq1) || 0;
+  var q2Accuracy = 1 - mq2/(hq2+mq2) || 0;
+  var q3Accuracy = 1 - mq3/(hq3+mq3) || 0;
+  var q4Accuracy = 1 - mq4/(hq4+mq4) || 0;
 
   // Figure out where the misses were, i.e. quadrant 1,2,3,4
   d3.select('.q1 span')
@@ -257,10 +256,7 @@ Player.prototype.processStats = function(arenaWidth, arenaHeight){
 
   d3.select('.q4 span')
             .text(Math.round(q4Accuracy * 100) + '%   ' + hq4 + ' / ' + (hq4+mq4));
-  
-  // Report Max level reached
 
-  // 
 
 }
 

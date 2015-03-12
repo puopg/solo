@@ -62,6 +62,12 @@ Arena.prototype.endGame = function(){
   this.removeEnemies();
   this.removeMissAnimations();
   this.removeDeathAnimations();
+
+  // Update High Score if neceesary
+  var currentHighScore = parseInt(d3.select('.high span').text());
+  if(currentHighScore < this.player.currentScore)
+    d3.select('.high span')
+      .text(this.player.currentScore);
 }
 //----- Arena Methods End -----
 
