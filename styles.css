@@ -2,6 +2,7 @@
     margin-left: auto;
     margin-right: auto;
     width: 50%;
+    cursor: none;
 }
 
 .grid{
@@ -23,4 +24,14 @@
     fill: none;
     stroke: red;
     stroke-width: 5;
+}
+.crosshair{
+    fill: #00E600;
+    stroke: black;
+    stroke-width: 1;
+    z-index: 4;
+}
+
+.shot{
+    fill: red;
 }

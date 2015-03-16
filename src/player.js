@@ -5,6 +5,7 @@ var Player = function(){
     // List of misses used for animation sake
     this.misses = [];
     this.enemyDeaths = [];
+    this.shots = [];
 
     // History of all hits and misses, to be used in data aggregation
     this.historyHits = [];
@@ -15,7 +16,8 @@ var Player = function(){
 
     // Total number of misses
     this.missTotal = 0;
-
+    this.shotTotal = 0;
+    this.shotNumber = 0;
     // Initialize player accuracy
     this.accuracy = PLAYER_INIT_ACCURACY;
 
@@ -23,6 +25,66 @@ var Player = function(){
     this.currentScore = 0;
 }
 
+Player.prototype.shotOffset = function(coordinates, scale){
+  var newCoordinates = [coordinates[0],coordinates[1]];
+  var offset = this.shotNumber;
+  var rngHoriz = getRandomArbitrary(-1,1);
+  var rngVert = getRandomArbitrary(-2,2);
+  var verticalOffsetArray = [
+  [0],
+  [1],
+  [2],
+  [4],
+  [6],
+  [8],
+  [10],
+  [11],
+  [13]];
+
+  var horizontalOffsetArray = [
+  [0],
+  [0],
+  [0],
+  [0],
+  [0],
+  [-1],
+  [-2],
+  [-2],
+  [0]];
+
+  var horizontalOffsetOscillateArray = [
+  [2],
+  [4],
+  [5],
+  [6],
+  [8],
+  [6],
+  [4],
+  [0],
+  [-2],
+  [-3],
+  [-2],
+  [-1],
+  [0],
+  [-1],
+  [-2],
+  [0]];
+
+  if(this.shotNumber >= horizontalOffsetArray.length){
+    newCoordinates[0] += scale*(horizontalOffsetOscillateArray[(offset-horizontalOffsetArray.length) % (horizontalOffsetOscillateArray.length-1)])[0] + rngHoriz;
+    newCoordinates[1] -= scale*(verticalOffsetArray[verticalOffsetArray.length-1])[0] + rngVert;
+  }
+  else{
+    newCoordinates[0] += scale*(horizontalOffsetArray[offset])[0] + rngHoriz;
+    newCoordinates[1] -= scale*(verticalOffsetArray[offset])[0] + rngVert;
+  }
+  return newCoordinates;
+}
+
+Player.prototype.restoreAccuracy = function(){
+  console.log('Accuracy restored')
+  this.shotNumber = 0;
+}
 //----- Click actions -----
 Player.prototype.hit = function(enemy){
   this.addToHistoryHits(enemy.x, enemy.y);
@@ -32,9 +94,10 @@ Player.prototype.hit = function(enemy){
   this.updateScores();
 }
 
-Player.prototype.miss = function(){
+Player.prototype.miss = function(pos){
     // Get the coordinates of the miss
-    var coordinates = d3.mouse(d3.select("#canvas").node());
+    var coordinates = pos || d3.mouse(d3.select("#canvas").node());
+    //d3.mouse(d3.select("#canvas").node());
     var click = {
         x: coordinates[0],
         y: coordinates[1],
@@ -67,6 +130,46 @@ Player.prototype.miss = function(){
       document.dispatchEvent(endEvent);
     }
 }
+
+Player.prototype.shoot = function(pos, scale){
+    // Get the coordinates of the miss
+    var coordinates = this.shotOffset(pos,scale);
+    //d3.mouse(d3.select("#canvas").node());
+    var click = {
+        x: coordinates[0],
+        y: coordinates[1],
+        r: 5,
+        time: 0,
+        id: this.shotTotal
+    }
+
+    // Add new miss to list so d3 can render it. Also add to history
+    this.shots.push(click);
+
+    var shots = d3.select('#arena').selectAll('circle.shot')
+                                    .data(this.shots, function(d) {return d.id});
+
+    shots.enter().append('svg:circle')
+           .attr('class', 'shot')
+           .attr('cx', function(d) {return d.x;} )
+           .attr('cy', function(d) {return d.y;} )
+           .attr('r',  SHOT_SIZE )
+
+    // Determine if hit
+    if(this.isTargetHit(coordinates))
+      console.log('Target hit');
+
+    this.shotTotal++;
+    this.shotNumber++;
+}
+
+Player.prototype.isTargetHit = function(shotCoord){
+  var distance = lineDistance(shotCoord[0],shotCoord[1],ARENA_WIDTH/2,ARENA_HEIGHT/2);
+  if(distance >= SHOT_SIZE+TARGET_SIZE)
+    return false;
+  return true;
+}            
+
 Player.prototype.heal = function(){
   console.log('Player heals for ' + PLAYER_HEAL_AMOUNT + '!');
 
@@ -114,6 +217,19 @@ Player.prototype.deathAnimation = function() {
     deaths.attr('r',  function(d) {return d.r;})
 }
 
+Player.prototype.shotAnimation = function() {
+    this.shots.forEach(function(shot){
+      shot.time += RING_SPEED;
+    });
+
+    var shots = d3.select('#arena').selectAll('circle.shot')
+                          .data(this.shots, function(d){return d.id;})
+
+    // Update
+    shots.attr('time',  function(d) {return d.time;})
+}
+
+
 /// Function: removeMiss()
 /// This function will remove all miss animations that have reached a maximum size. 
 /// d3 will see this change and render accordingly. 
@@ -139,6 +255,17 @@ Player.prototype.removeDeaths = function(){
 
   var enemyDeaths = d3.select('#arena').selectAll('circle.death')
                         .data(this.enemyDeaths,function(d) {return d.id;})
+                        .exit().remove();
+}
+
+Player.prototype.removeShots = function(){
+  for(var i = this.shots.length-1; i >=0 ; i--){
+    if(this.shots[i].time > SHOT_DURATION)
+      this.shots.splice(i,1);
+  }
+
+  var shots = d3.select('#arena').selectAll('circle.shot')
+                        .data(this.shots,function(d) {return d.id;})
                         .exit().remove();
 }
 //----- Animations End-----

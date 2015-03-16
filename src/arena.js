@@ -3,6 +3,7 @@ var Arena = function(width, height){
     this.width = width;
     this.height = height;
     this.level = 1;
+    this.crosshair = [];
 
     // Reference to the arena/SVG canvas area
     this.svg = null;
@@ -28,9 +29,57 @@ Arena.prototype.createArena = function(){
     // Initialize svg arena
     this.svg = d3.select('#arena');
 
+    var intervalId = null,
+    pos = null;
+
+    this.crosshair.push({x:this.width/2, y:this.height/2});
+
+    ARENA_WIDTH = this.width;
+    ARENA_HEIGHT = this.height;
+
+    this.svg.selectAll('circle.target')
+            .data(this.crosshair)
+            .enter()
+            .append('svg:circle')
+            .attr('class', 'target')
+            .attr('cx', function(d) {return d.x;} )
+            .attr('cy', function(d) {return d.y;} )
+            .attr('r',  TARGET_SIZE);
+            
+    this.svg.selectAll('circle.crosshair')
+            .data(this.crosshair)
+            .enter()
+            .append("svg:image")
+            .attr('class', 'crosshair')
+            .attr("height", 48)
+            .attr("width", 48)
+            .attr("transform", function(d) { return "translate(" + (d.x-24) + "," + (d.y-24) + ")"; } )
+            .attr("xlink:href","assets/csReticle.png")
+
+    this.svg.on('mousedown', function() {
+    pos = d3.mouse(document.getElementById('arena'));
+      this.player.shoot(pos, 9);
+      intervalId = setInterval(function(){
+        this.player.shoot(pos, 9);
+        }.bind(this), 100);
+    }.bind(this))
+
+    .on('mouseup', function() {
+      this.player.restoreAccuracy();
+      clearInterval(intervalId);
+    }.bind(this))
+    .on("mousemove", function () {
+        pos = d3.mouse(document.getElementById('arena'));
+        this.crosshair[0].x = pos[0];
+        this.crosshair[0].y = pos[1];
+        this.svg.selectAll('image.crosshair')
+                .data(this.crosshair)
+                .attr("transform", function(d) { return "translate(" + (d.x-24) + "," + (d.y-24) + ")"; } )
+    }.bind(this))
+
     // Bind click event on canvas for the player miss
-    d3.select('#canvas')
-      .on('click', this.player.miss.bind(this.player));
+    // d3.select('#canvas')
+    //   .on('click', this.player.miss.bind(this.player));
 
     // Periodically, add enemies to the arena
     this.intervalEnemySpawn();
@@ -102,6 +151,7 @@ Arena.prototype.removeDeathAnimations = function(){
 /// Function: enemySpawn()
 /// This function will spawn an enemy at a random location inside the arena.
 Arena.prototype.enemySpawn = function() {
+  return;
   // Create a new enemy
   var enemy = new Enemy(this.width, this.height, this.totalEnemiesCreated);
   this.enemies.push(enemy);  
@@ -190,8 +240,7 @@ Arena.prototype.enemyDestroy = function(enemy) {
   this.player.hit(enemy);
   console.log('Enemy ' + enemy.id + ' Destroyed');
 }
-//----- Arena Enemy Methods End -----
-                       
+//----- Arena Enemy Methods End -----      
 
 //----- Arena Intervals -----
 /// These are a set of intervals which will run during the game.
@@ -221,7 +270,7 @@ Arena.prototype.intervalEnemySpawn = function(){
     this.level++;
 
     // Replenish 3 lives on every 3rd level
-    if( (this.level % 3) === 0 ){
+    if( (this.level % PLAYER_HEAL_FREQ) === 0 ){
       this.player.heal();
     }
 
@@ -244,6 +293,10 @@ Arena.prototype.intervalPlayer = function(){
     if(this.player.enemyDeaths.length > 0){
       this.player.deathAnimation();
       this.player.removeDeaths();
+    }
+    if(this.player.shots.length > 0){
+      this.player.shotAnimation();
+      this.player.removeShots();
     }
   }.bind(this),50);
 
